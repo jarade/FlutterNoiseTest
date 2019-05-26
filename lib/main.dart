@@ -1,10 +1,13 @@
 import 'package:noise_meter/noise_meter.dart';
 import 'package:flutter/material.dart';
+import 'package:audioplayers/audio_cache.dart';
 import 'dart:async';
 
 void main() {
   runApp(new MyApp());
 }
+
+const alarmAudioPath = "sound_alarm.mp3";
 
 class MyApp extends StatefulWidget {
   @override
@@ -20,8 +23,13 @@ class _MyAppState extends State<MyApp> {
   double minValue = 30;
   String _message = '';
 
+  TextEditingController minValueCtrl = TextEditingController();
+  bool minValueListener = false;
+
   int lowestValue = 0;
   int highestValue = 999;
+
+  static AudioCache player = new AudioCache();
 
   @override
   void initState() {
@@ -30,6 +38,9 @@ class _MyAppState extends State<MyApp> {
 
   void onData(NoiseEvent e) {
     this.setState(() {
+
+      player.play(alarmAudioPath);
+
       this._noiseLevel = "${e.decibel} dB!";
       if(e.decibel >= this.maxValue){
         this._message = "Over the max threshold";
@@ -54,6 +65,7 @@ class _MyAppState extends State<MyApp> {
 
   void stopRecorder() async {
     try {
+      this._message = "";
       if (_noiseSubscription != null) {
         _noiseSubscription.cancel();
         _noiseSubscription = null;
@@ -79,9 +91,9 @@ class _MyAppState extends State<MyApp> {
         border: OutlineInputBorder(),
         labelText: label,
       ),
-      onSubmitted: func,
       keyboardType: TextInputType.number,
       maxLength: 3,
+      onSubmitted: func,
     );
   }
 
@@ -92,22 +104,20 @@ class _MyAppState extends State<MyApp> {
         appBar: AppBar(
           title: Text("Noise Level Example"),
         ),
-        body: Center(
+        body: Container(
+          padding: const EdgeInsets.all(8.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
               textComponent("Noise Level",),
               textComponent(_noiseLevel == null ? 'unknown' : '$_noiseLevel'),
               textComponent('$_message'),
-              textComponent('$minValue'),
               fieldComponent("What is the quiet threshold?",
-                (input) {
-                   setState( () {
-                     this.minValue = input;
-                     print('$input');
-                     print('$minValue');
-                   });
-              }),
+                      (value) => setState(() => this.minValue = double.parse(value)  )
+              ),
+              fieldComponent("What is the ear bleeading threshold?",
+                      (value) => setState(() => this.maxValue = double.parse(value)  )
+              ),
             ],
           ),
         ),
